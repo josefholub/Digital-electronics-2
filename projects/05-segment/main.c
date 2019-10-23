@@ -61,7 +61,7 @@ int main(void)
         SEG_putc(2, 3);
         SEG_putc(0, 2);
         SEG_putc(1, 1);
-        SEG_putc(3, 0);
+        SEG_putc(9, 0);
     }
 
     return (0);

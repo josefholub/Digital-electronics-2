@@ -45,9 +45,9 @@ uint8_t segment_digit[] = {
     0b10110000,      // Digit 3
     0b10011001,      // Digit 4
     0b10010010,      // Digit 5
-    0b10000010,      // Digit 5
-
-    // TODO: Set segments for other digits
+    0b10000010,      // Digit 6
+    0b11111000,      // Digit 7
+    0b10000000,      // Digit 8
     0b10011000};     // Digit 9
 
 /* Active high position 0 to 3 */
