@@ -1,82 +1,96 @@
+;* ---------------------------------------------------------------------
+;*
+;* Assembly implementation of 4- and 8--bit LFSR-based (Linear Feedback
+;* Shift Register) pseudo-random generators.
+;* ATmega328P (Arduino Uno), 16 MHz, AVR 8-bit Toolchain 3.6.2
+;*
+;* Copyright (c) 2017-2019 Tomas Fryza
+;* Dept. of Radio Electronics, Brno University of Technology, Czechia
+;* This work is licensed under the terms of the MIT license.
+;*
+;* https://www.xilinx.com/support/documentation/application_notes/xapp052.pdf
+;* http://courses.cse.tamu.edu/walker/csce680/lfsr_table.pdf
 ;*
 ;* ---------------------------------------------------------------------
-;* Author:      Tomas Fryza, Wykys
-;*              Dept. of Radio Electronics, Brno Univ. of Technology
-;* Created:     2017-11-09
-;* Last update: 2019-07-16
-;* Platform:    ATmega328P, AVR 8-bit Toolchain 3.6.2
-;* ---------------------------------------------------------------------
-;* Description: Implementation of 8- and 16-bit LFSR-based (Linear
-;* Feedback Shift Register) pseudo-random generators.
-;* TODO: Verify functionality of 8-bit pseudo-random generator and
-;* complete 16-bit generator.
-;*
 
+;* Includes ------------------------------------------------------------
 ; Set offset for control register addresses (NEEDED FOR I/O REGISTERS)
-#define __SFR_OFFSET 0
+#define __SFR_OFFSET    0
 #include <avr/io.h>
 
+;* Define --------------------------------------------------------------
 #define result  r16
 #define temp    r17
 #define input   r24
 
-;**
-; * Brief:  LFSR-based 8-bit pseudo-random generator.
-; * Input:  r24 - Current value of 8-bit shift register
-; * Return: r24 - Updated value of 8-bit shift register
-; * Note:   LFSR taps positions are: 7, 5, 4, 3
-; * https://www.xilinx.com/support/documentation/application_notes/xapp052.pdf
-; * http://courses.cse.tamu.edu/walker/csce680/lfsr_table.pdf
-; *
+;* Functions -----------------------------------------------------------
+;* LFSR-based 4-bit pseudo-random generator.
+;* Input:  r24 - Current value of shift register
+;* Return: r24 - New value of shift register
+.global rand4_asm
+rand4_asm:
+    push result             ; Save "Result" on Stack
+    push temp               ; Save "Temp" on Stack
+
+    bst input, 3            ; Copy "Input" bit 3 to T Flag...
+    bld result, 0           ; ...and then to "Result" bit 0
+    bst input, 2            ; Copy "Input" bit 2 to T Flag
+    bld temp, 0             ; ...and then to "Temp" bit 0
+    eor result, temp        ; Xor "Input" bits 3 and 2
+
+    lsl input               ; Shift all "Input" bits to left
+    com result              ; Invert "Result"
+    bst result, 0           ; Copy "Result" bit 0 to T Flag...
+    bld input, 0            ; ...and then to "Input" bit 0
+    andi input, 0x0f        ; Make sure 4 upper birs are cleared
+
+    pop temp                ; Restore "Temp" from Stack
+    pop result              ; Restore "Result" from Stack
+    ret                     ; Return from subroutine
+
+;*----------------------------------------------------------------------
+;* LFSR-based 8-bit pseudo-random generator.
+;* Input:  r24 - Current value of shift register
+;* Return: r24 - New value of shift register
 .global rand8_asm
 rand8_asm:
-    push result         ; Save result on the Stack
-    push temp           ; Save temp on the Stack
+    push result             ; Backup values to Stack
+    push temp
 
-    ; Copy input bit 7
-    bst input, 7        ; Store bit 7 of input in T Flag
-    bld result, 0       ; Load T Flag into bit 0 of result
-    ; Copy input bit 5
-    bst input, 5        ; Store bit 5 of input in T Flag
-    bld temp, 0         ; Load T Flag into bit 0 of temp
-    ; Xor input bits 7 and 5
+    bst input, 7            ; Xor "Input" bit 7 and 5
+    bld result, 0
+    bst input, 5
+    bld temp, 0
     eor result, temp
 
-    ; Copy input bit 4 and xor with previous result
-    bst input, 4        ; Store bit 4 of input in T Flag
-    bld temp, 0         ; Load T Flag into bit 0 of temp
+    bst input, 4            ; Xor "Input" bit 4 with subresult
+    bld temp, 0
     eor result, temp
 
-    ; Copy input bit 3 and xor with previous result
-    bst input, 3        ; Store bit 3 of input in T Flag
-    bld temp, 0         ; Load T Flag into bit 0 of temp
+    bst input, 3            ; Xor "Input" bit 3 with subresult
+    bld temp, 0
     eor result, temp
 
-    ; Invert result
+    lsl input               ; Update new value in shift register
     com result
-    ; Shift all input bits to left
-    lsl input
-    ; Copy result as a new bit at LSB position
-    bst result, 0       ; Store bit 0 of result in T Flag
-    bld input, 0        ; Load T Flag into bit 0 of input
+    bst result, 0
+    bld input, 0
 
-    pop temp            ; Restore temp from Stack
-    pop result          ; Restore result from Stack
-    ret                 ; Return from subroutine
+    pop temp                ; Restore values from Stack end return
+    pop result
+    ret
 
-;**
-; * Brief:  LFSR-based 16-bit pseudo-random generator.
-; * Input:  r25:r24 - Current value of 16-bit shift register
-; * Return: r25:r24 - Updated value of 16-bit shift register
-; * Note:   LFSR taps positions are: WRITE YOUR CODE HERE
-; *
-.global rand16_asm
-rand16_asm:
-    push result         ; Save result on the Stack
-    push temp           ; Save temp on the Stack
 
-    ; WRITE YOUR CODE HERE
+.global burst_asm
+burst_asm:
+    push result             ; Backup values to Stack
+    push temp
 
-    pop temp            ; Restore temp from Stack
-    pop result          ; Restore result from Stack
-    ret                 ; Return from subroutine
+    sbi PORTB, 5
+    nop
+    cbi PORTB, 5
+    nop
+    
+    pop temp                ; Restore values from Stack end return
+    pop result
+    ret
