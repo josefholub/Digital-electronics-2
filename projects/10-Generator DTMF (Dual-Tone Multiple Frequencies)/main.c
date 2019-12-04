@@ -28,14 +28,30 @@
 
 /* Define ------------------------------------------------------------*/
 #define UART_BAUD_RATE 9600
+#define sample_rate 16e-6
 
 /* Variables ---------------------------------------------------------*/
 uint16_t i = 0;
-uint16_t freq = 1000;
-uint16_t t = 0;
+//uint16_t freq = 1000;
+//uint16_t t = 0;
+uint16_t angle = 0;
+uint16_t duty = 0;
 
+unsigned char x;
+volatile unsigned char sine[256];
 /* Function prototypes -----------------------------------------------*/
 
+void generate_sin(int freq){  
+    char uart_string[3];
+      
+    for(unsigned char x=0; x<255;x++){  
+    sine[x] = 128*(sin(2.0*M_PI*x*sample_rate*freq) + 1); 
+
+    itoa(sine[x], uart_string, 10);
+    uart_puts(uart_string);
+    uart_puts("\r\n"); 
+    }  
+}
 
 /* Functions ---------------------------------------------------------*/
 /**
@@ -44,23 +60,31 @@ uint16_t t = 0;
  *  Input:  None
  *  Return: None
  */
+
 int main(void)
 {
-    DDRB |= (1<<PB1);
+    //uint16_t x = 0;
+    //char uart_string[3];
 
-    TCCR0A |= (1 << COM1A1) | (1 << COM1A0) | (1 << WGM10) | (1 << WGM11);
-    TCCR0B |= (1 << CS11);
+    uart_init(UART_BAUD_SELECT(UART_BAUD_RATE, F_CPU));
 
-    TIMSK0 |= (1<<TOIE1);
+    DDRD |= (1<<PD6);
+
+    TCCR0A |= (1 << COM0A1) | (1 << COM0A0) | (1 << WGM00) | (1 << WGM01);  //FAST PWM
+    TCCR0B |= (1 << CS00);                                                  //Presclaler 8
+
+    TIMSK0 |= (1<<TOIE0);                                                   //enable interrupt
 
     sei();
 
+    generate_sin(1000);
+
     while(1){
-        OCR1A = i;
-        i = 2+sin((2*3.1415*freq)*(1/t));
+        if(i > 256)i = 0;
     }
 }
 
 ISR(TIMER0_OVF_vect){
-    t = t + 1023;
+    OCR0A = sine[i];
+    i++;
 }
