@@ -3,8 +3,8 @@
  * Author:      Josef HOLUB
                 Tomas LORENC
  *              Dept. of Radio Electronics, Brno Univ. of Technology
- * Created:     2017-10-27
- * Last update: 2019-11-08
+ * Created:     2019-11-27
+ * Last update: 2019-12-11
  * Platform:    ATmega328P, 16 MHz, AVR 8-bit Toolchain 3.6.2
  * ---------------------------------------------------------------------
  * Description:
@@ -40,6 +40,8 @@ volatile uint8_t sine35[125];
 volatile uint8_t sine40[125];
 volatile uint8_t sine50[125];
 
+volatile uint8_t *p_pole;
+
 
 /* Function prototypes -----------------------------------------------*/
 
@@ -57,7 +59,7 @@ void generate_sin(void){
     sine40[x] = 128*(sin(2.0*M_PI*x*sample_rate*4000) + 1); 
     sine50[x] = 128*(sin(2.0*M_PI*x*sample_rate*5000) + 1); 
 
-/*     itoa(sine[x], uart_string, 10);
+/*     itoa(sine5[x], uart_string, 10);
     uart_puts(uart_string);
     uart_puts("\r\n"); */
     }  
@@ -75,7 +77,7 @@ int main(void)
 {
     uint8_t x = 0;  //radky
     uint8_t y = 0;  //sloupce
-
+//char uart_string[3];
     uart_init(UART_BAUD_SELECT(UART_BAUD_RATE, F_CPU));
 
     GPIO_config_output(&DDRD, PD6);                                         //PWM output
@@ -95,21 +97,32 @@ int main(void)
 
     generate_sin();
 
+    p_pole = sine5;
+
     sei();
 
+    /* for(uint8_t d = 0;d < 200; d++){
+       itoa(*p_pole, uart_string, 10);
+        uart_puts(uart_string);
+        uart_puts("\r\n");
+         p_pole++;
+         if(d == 125){
+            p_pole = p_pole - 125;
+        }
+    } */
     while(1){
 
         if(!bit_is_set(PINB, x)){
-            if(y == 0)uart_putc('1');
-            if(y == 1)uart_putc('2');
-            if(y == 2)uart_putc('3');
-            if(y == 3)uart_putc('A');
+            if(y == 0)p_pole = sine5;;
+            if(y == 1)p_pole = sine10;
+            if(y == 2)p_pole = sine15;
+            if(y == 3)p_pole = sine20;
         }
         x++;
         if(!bit_is_set(PINB, x)){
-            if(y == 0)uart_putc('4');
-            if(y == 1)uart_putc('5');
-            if(y == 2)uart_putc('6');
+            if(y == 0)p_pole = sine25;
+            if(y == 1)p_pole = sine30;
+            if(y == 2)p_pole = sine35
             if(y == 3)uart_putc('B');
         }
         x++;
@@ -135,12 +148,22 @@ int main(void)
         GPIO_write(&PORTC, y, 0);
         
         if(i > 124){
+            p_pole = p_pole - i;
             i = 0;
         }
+        
     }
 }
 
 ISR(TIMER0_OVF_vect){
-    OCR0A = sine50[i];
+    //char uart_string[3];
+    OCR0A = *p_pole;
+    p_pole++;
     i++;
+    /* itoa(*p_pole, uart_string, 10);
+    uart_puts(uart_string);
+    uart_puts("\r\n");  */
+    /* itoa(i, uart_string, 10);
+    uart_puts(uart_string);
+    uart_puts("\r\n"); */
 }
