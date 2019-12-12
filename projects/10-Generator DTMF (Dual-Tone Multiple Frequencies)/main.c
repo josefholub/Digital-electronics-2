@@ -41,6 +41,7 @@ volatile uint8_t sine40[125];
 volatile uint8_t sine50[125];
 
 volatile uint8_t *p_pole;
+volatile uint8_t *ptr;
 
 
 /* Function prototypes -----------------------------------------------*/
@@ -49,19 +50,19 @@ void generate_sin(void){
     //char uart_string[3];
       
     for(unsigned char x=0; x<125;x++){  
-    sine5[x] = 128*(sin(2.0*M_PI*x*sample_rate*500) + 1); 
-    sine10[x] = 128*(sin(2.0*M_PI*x*sample_rate*1000) + 1); 
-    sine15[x] = 128*(sin(2.0*M_PI*x*sample_rate*1500) + 1); 
-    sine20[x] = 128*(sin(2.0*M_PI*x*sample_rate*2000) + 1); 
-    sine25[x] = 128*(sin(2.0*M_PI*x*sample_rate*2500) + 1); 
-    sine30[x] = 128*(sin(2.0*M_PI*x*sample_rate*3000) + 1); 
-    sine35[x] = 128*(sin(2.0*M_PI*x*sample_rate*3500) + 1); 
-    sine40[x] = 128*(sin(2.0*M_PI*x*sample_rate*4000) + 1); 
-    sine50[x] = 128*(sin(2.0*M_PI*x*sample_rate*5000) + 1); 
+    sine5[x] = 127*(sin(2.0*M_PI*x*sample_rate*500) + 1);       //500  Hz 
+    sine10[x] = 128*(sin(2.0*M_PI*x*sample_rate*1000) + 1);     //1.0 kHz
+    sine15[x] = 128*(sin(2.0*M_PI*x*sample_rate*1500) + 1);     //1.5 kHz 
+    sine20[x] = 128*(sin(2.0*M_PI*x*sample_rate*2000) + 1);     //2.0 kHz
+    sine25[x] = 128*(sin(2.0*M_PI*x*sample_rate*2500) + 1);     //2.5 kHz
+    sine30[x] = 128*(sin(2.0*M_PI*x*sample_rate*3000) + 1);     //3.0 kHz
+    sine35[x] = 128*(sin(2.0*M_PI*x*sample_rate*3500) + 1);     //3.5 kHz
+    sine40[x] = 128*(sin(2.0*M_PI*x*sample_rate*4000) + 1);     //4.0 kHz
+    sine50[x] = 128*(sin(2.0*M_PI*x*sample_rate*5000) + 1);     //5.0 kHz
 
-/*     itoa(sine5[x], uart_string, 10);
-    uart_puts(uart_string);
-    uart_puts("\r\n"); */
+    //itoa(sine5[x], uart_string, 10);
+    //uart_puts(uart_string);
+    //uart_puts("\r\n");
     }  
 }
 
@@ -75,9 +76,10 @@ void generate_sin(void){
 
 int main(void)
 {
-    uint8_t x = 0;  //radky
-    uint8_t y = 0;  //sloupce
-//char uart_string[3];
+    volatile uint8_t x = 0;  //radky
+    volatile uint8_t y = 0;  //sloupce
+    //uint8_t s = 0;  //stav
+    //char uart_string[3];
     uart_init(UART_BAUD_SELECT(UART_BAUD_RATE, F_CPU));
 
     GPIO_config_output(&DDRD, PD6);                                         //PWM output
@@ -113,31 +115,31 @@ int main(void)
     while(1){
 
         if(!bit_is_set(PINB, x)){
-            if(y == 0)p_pole = sine5;;
-            if(y == 1)p_pole = sine10;
-            if(y == 2)p_pole = sine15;
-            if(y == 3)p_pole = sine20;
+            if(y == 0)p_pole = sine5;        //1
+            if(y == 1)p_pole = sine10;       //2
+            if(y == 2)p_pole = sine15;       //3
+            if(y == 3)uart_putc('A');        //A
         }
         x++;
         if(!bit_is_set(PINB, x)){
-            if(y == 0)p_pole = sine25;
-            if(y == 1)p_pole = sine30;
-            if(y == 2)p_pole = sine35
-            if(y == 3)uart_putc('B');
+            if(y == 0)p_pole = sine20;       //4
+            if(y == 1)p_pole = sine25;       //5
+            if(y == 2)p_pole = sine30;       //6
+            if(y == 3)uart_putc('B');        //B
         }
         x++;
         if(!bit_is_set(PINB, x)){
-            if(y == 0)uart_putc('7');
-            if(y == 1)uart_putc('8');
-            if(y == 2)uart_putc('9');
-            if(y == 3)uart_putc('C');
+            if(y == 0)p_pole = sine35;       //7
+            if(y == 1)p_pole = sine40;       //8
+            if(y == 2)p_pole = sine50;       //9
+            if(y == 3)uart_putc('C');        //C
         }
         x++;
         if(!bit_is_set(PINB, x)){
-            if(y == 0)uart_putc('*');
-            if(y == 1)uart_putc('0');
-            if(y == 2)uart_putc('#');
-            if(y == 3)uart_putc('D');
+            if(y == 0)uart_putc('*');        //*
+            if(y == 1)uart_putc('0');        //0
+            if(y == 2)uart_putc('#');        //#
+            if(y == 3)uart_putc('D');        //D
         }
         x = 0;
         GPIO_write(&PORTC, y, 1);
@@ -146,20 +148,20 @@ int main(void)
             y = 0;
         }
         GPIO_write(&PORTC, y, 0);
-        
-        if(i > 124){
-            p_pole = p_pole - i;
-            i = 0;
-        }
-        
     }
 }
 
 ISR(TIMER0_OVF_vect){
     //char uart_string[3];
-    OCR0A = *p_pole;
-    p_pole++;
+    ptr++;
+    OCR0A = *ptr;
+    //p_pole++;
     i++;
+    if(i > 124){
+            //p_pole = p_pole - i;
+            i = 0;
+            ptr=p_pole;
+        }
     /* itoa(*p_pole, uart_string, 10);
     uart_puts(uart_string);
     uart_puts("\r\n");  */
