@@ -8,14 +8,14 @@
  * Platform:    ATmega328P, 16 MHz, AVR 8-bit Toolchain 3.6.2
  * ---------------------------------------------------------------------
  * Description:
- *    Generator DTMF
+ *      Generator DTMF
  */
 
 /* Includes ----------------------------------------------------------*/
 #include <stdlib.h>         // itoa() function
 #include <avr/io.h>
 #include <avr/interrupt.h>
-#include <math.h>       //sin() function
+#include <math.h>           //sin() function
 #include "timer.h"
 //#include "uart.h"
 #include "gpio.h"
